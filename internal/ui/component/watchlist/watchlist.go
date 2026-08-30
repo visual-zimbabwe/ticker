@@ -9,6 +9,7 @@ import (
 	row "github.com/achannarasappa/ticker/v5/internal/ui/component/watchlist/row"
 	u "github.com/achannarasappa/ticker/v5/internal/ui/util"
 
+	grid "github.com/achannarasappa/term-grid"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,6 +19,7 @@ type Config struct {
 	ShowPositions         bool
 	ExtraInfoExchange     bool
 	ExtraInfoFundamentals bool
+	ShowOHLC              bool
 	Sort                  string
 	Styles                c.Styles
 }
@@ -89,6 +91,7 @@ func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 					Separate:              m.config.Separate,
 					ExtraInfoExchange:     m.config.ExtraInfoExchange,
 					ExtraInfoFundamentals: m.config.ExtraInfoFundamentals,
+					ShowOHLC:              m.config.ShowOHLC,
 					ShowPositions:         m.config.ShowPositions,
 					Styles:                m.config.Styles,
 					Asset:                 asset,
@@ -175,12 +178,85 @@ func (m *Model) View() string {
 	}
 
 	rows := make([]string, 0)
+	if m.config.ShowOHLC && len(m.rows) > 0 {
+		rows = append(rows, m.renderOHLCHeader())
+	}
 	for _, row := range m.rows {
 		rows = append(rows, row.View())
 	}
 
 	return strings.Join(rows, "\n")
 
+}
+
+func (m *Model) renderOHLCHeader() string {
+	sortKey := m.config.Sort
+	if sortKey == "" {
+		sortKey = "change"
+	}
+
+	symLabel := "SYMBOL"
+	if sortKey == "symbol" || sortKey == "alpha" {
+		symLabel += " ▲"
+	}
+
+	openLabel := "OPEN"
+	if sortKey == "open" {
+		openLabel += " ▼"
+	}
+
+	highLabel := "HIGH"
+	if sortKey == "high" {
+		highLabel += " ▼"
+	}
+
+	lowLabel := "LOW"
+	if sortKey == "low" {
+		lowLabel += " ▲"
+	}
+
+	closeLabel := "CLOSE"
+	if sortKey == "close" {
+		closeLabel += " ▼"
+	}
+
+	changeLabel := "CHANGE (%)"
+	if sortKey == "change" {
+		changeLabel += " ▼"
+	}
+
+	volumeLabel := "VOLUME"
+	if sortKey == "volume" {
+		volumeLabel += " ▼"
+	}
+
+	mktCapLabel := "MKT CAP"
+	if sortKey == "mktcap" || sortKey == "market_cap" {
+		mktCapLabel += " ▼"
+	}
+
+	headerCells := []grid.Cell{
+		{Text: m.config.Styles.TextBold(symLabel), Width: row.WidthName},
+		{Text: ""},
+		{Text: "", Width: row.WidthMarketState},
+		{Text: m.config.Styles.TextBold(openLabel), Width: m.cellWidths.WidthOpen, Align: grid.Right},
+		{Text: m.config.Styles.TextBold(highLabel), Width: m.cellWidths.WidthHigh, Align: grid.Right},
+		{Text: m.config.Styles.TextBold(lowLabel), Width: m.cellWidths.WidthLow, Align: grid.Right},
+		{Text: m.config.Styles.TextBold(closeLabel), Width: m.cellWidths.WidthQuoteExtended, Align: grid.Right},
+		{Text: m.config.Styles.TextBold("PRE-MKT"), Width: m.cellWidths.WidthPreMarket, Align: grid.Right},
+		{Text: m.config.Styles.TextBold("POST-MKT"), Width: m.cellWidths.WidthPostMarket, Align: grid.Right},
+		{Text: m.config.Styles.TextBold(changeLabel), Width: m.cellWidths.WidthQuote, Align: grid.Right},
+		{Text: m.config.Styles.TextBold(volumeLabel), Width: m.cellWidths.WidthVolume, Align: grid.Right},
+		{Text: m.config.Styles.TextBold(mktCapLabel), Width: m.cellWidths.WidthMarketCap, Align: grid.Right},
+	}
+
+	return grid.Render(grid.Grid{
+		Rows: []grid.Row{
+			{Width: m.width, Cells: headerCells},
+			{Width: m.width, Cells: []grid.Cell{{Text: m.config.Styles.TextLine(strings.Repeat("─", m.width))}}},
+		},
+		GutterHorizontal: row.WidthGutter,
+	})
 }
 func getCellWidths(assets []*c.Asset) row.CellWidthsContainer {
 
@@ -210,6 +286,47 @@ func getCellWidths(assets []*c.Asset) row.CellWidthsContainer {
 			cellMaxWidths.WidthQuoteRange = row.WidthRangeStatic + (quoteLength * 2)
 		}
 
+		openLength := len(u.ConvertFloatToString(asset.QuotePrice.PriceOpen, asset.Meta.IsVariablePrecision))
+		if openLength > cellMaxWidths.WidthOpen {
+			cellMaxWidths.WidthOpen = openLength
+		}
+
+		highLength := len(u.ConvertFloatToString(asset.QuotePrice.PriceDayHigh, asset.Meta.IsVariablePrecision))
+		if highLength > cellMaxWidths.WidthHigh {
+			cellMaxWidths.WidthHigh = highLength
+		}
+
+		lowLength := len(u.ConvertFloatToString(asset.QuotePrice.PriceDayLow, asset.Meta.IsVariablePrecision))
+		if lowLength > cellMaxWidths.WidthLow {
+			cellMaxWidths.WidthLow = lowLength
+		}
+
+		volumeLength := len(u.ConvertFloatToString(asset.QuoteExtended.Volume, true))
+		if volumeLength > cellMaxWidths.WidthVolume {
+			cellMaxWidths.WidthVolume = volumeLength
+		}
+
+		if asset.QuoteExtended.MarketCap > 0 {
+			mktCapLength := len(u.ConvertFloatToString(asset.QuoteExtended.MarketCap, true))
+			if mktCapLength > cellMaxWidths.WidthMarketCap {
+				cellMaxWidths.WidthMarketCap = mktCapLength
+			}
+		}
+
+		if asset.QuotePrice.PricePreMarket > 0 {
+			preMktLength := len(u.ConvertFloatToString(asset.QuotePrice.PricePreMarket, asset.Meta.IsVariablePrecision)) + 10
+			if preMktLength > cellMaxWidths.WidthPreMarket {
+				cellMaxWidths.WidthPreMarket = preMktLength
+			}
+		}
+
+		if asset.QuotePrice.PricePostMarket > 0 {
+			postMktLength := len(u.ConvertFloatToString(asset.QuotePrice.PricePostMarket, asset.Meta.IsVariablePrecision)) + 10
+			if postMktLength > cellMaxWidths.WidthPostMarket {
+				cellMaxWidths.WidthPostMarket = postMktLength
+			}
+		}
+
 		if asset.Position != (c.Position{}) {
 			positionLength := len(u.ConvertFloatToString(asset.Position.Value, asset.Meta.IsVariablePrecision))
 			positionQuantityLength := len(u.ConvertFloatToString(asset.Position.Quantity, asset.Meta.IsVariablePrecision))
@@ -234,6 +351,28 @@ func getCellWidths(assets []*c.Asset) row.CellWidthsContainer {
 
 		}
 
+	}
+
+	if cellMaxWidths.WidthOpen < 8 {
+		cellMaxWidths.WidthOpen = 8
+	}
+	if cellMaxWidths.WidthHigh < 8 {
+		cellMaxWidths.WidthHigh = 8
+	}
+	if cellMaxWidths.WidthLow < 8 {
+		cellMaxWidths.WidthLow = 8
+	}
+	if cellMaxWidths.WidthVolume < 8 {
+		cellMaxWidths.WidthVolume = 8
+	}
+	if cellMaxWidths.WidthMarketCap < 10 {
+		cellMaxWidths.WidthMarketCap = 10
+	}
+	if cellMaxWidths.WidthPreMarket < 16 {
+		cellMaxWidths.WidthPreMarket = 16
+	}
+	if cellMaxWidths.WidthPostMarket < 16 {
+		cellMaxWidths.WidthPostMarket = 16
 	}
 
 	return cellMaxWidths

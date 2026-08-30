@@ -77,13 +77,20 @@ func getCurrencyRateByUse(ctx c.Context, assetClass c.AssetClass, fromCurrency s
 
 func convertAssetQuotePriceCurrency(currencyRateByUse currencyRateByUse, quotePrice c.QuotePrice) c.QuotePrice {
 	return c.QuotePrice{
-		Price:          quotePrice.Price * currencyRateByUse.QuotePrice,
-		PricePrevClose: quotePrice.PricePrevClose * currencyRateByUse.QuotePrice,
-		PriceOpen:      quotePrice.PriceOpen * currencyRateByUse.QuotePrice,
-		PriceDayHigh:   quotePrice.PriceDayHigh * currencyRateByUse.QuotePrice,
-		PriceDayLow:    quotePrice.PriceDayLow * currencyRateByUse.QuotePrice,
-		Change:         quotePrice.Change * currencyRateByUse.QuotePrice,
-		ChangePercent:  quotePrice.ChangePercent,
+		Price:                     quotePrice.Price * currencyRateByUse.QuotePrice,
+		PricePrevClose:            quotePrice.PricePrevClose * currencyRateByUse.QuotePrice,
+		PriceOpen:                 quotePrice.PriceOpen * currencyRateByUse.QuotePrice,
+		PriceDayHigh:              quotePrice.PriceDayHigh * currencyRateByUse.QuotePrice,
+		PriceDayLow:               quotePrice.PriceDayLow * currencyRateByUse.QuotePrice,
+		Change:                    quotePrice.Change * currencyRateByUse.QuotePrice,
+		ChangePercent:             quotePrice.ChangePercent,
+		PriceRegularClose:         quotePrice.PriceRegularClose * currencyRateByUse.QuotePrice,
+		PriceRegularChange:        quotePrice.PriceRegularChange * currencyRateByUse.QuotePrice,
+		PriceRegularChangePercent: quotePrice.PriceRegularChangePercent,
+		PricePreMarket:            quotePrice.PricePreMarket * currencyRateByUse.QuotePrice,
+		PreMarketChangePercent:    quotePrice.PreMarketChangePercent,
+		PricePostMarket:           quotePrice.PricePostMarket * currencyRateByUse.QuotePrice,
+		PostMarketChangePercent:   quotePrice.PostMarketChangePercent,
 	}
 }
 

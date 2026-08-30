@@ -99,6 +99,7 @@ func NewModel(dep c.Dependencies, ctx c.Context, monitors *mon.Monitor, version 
 			ShowPositions:         ctx.Config.ShowPositions,
 			ExtraInfoExchange:     ctx.Config.ExtraInfoExchange,
 			ExtraInfoFundamentals: ctx.Config.ExtraInfoFundamentals,
+			ShowOHLC:              ctx.Config.ShowOHLC,
 			Styles:                ctx.Reference.Styles,
 		}),
 		summary:            summary.NewModel(ctx),
@@ -190,11 +191,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) { //nolint:maintidx
 		case "s":
 			m.mu.Lock()
 
-			// Cycle through sort options: default -> alpha -> value -> user -> default
-			sortOptions := []string{"", "alpha", "value", "user"}
+			// Cycle through sort options: change -> symbol -> close -> volume -> mktcap -> high -> low -> open -> user
+			sortOptions := []string{"change", "symbol", "close", "volume", "mktcap", "high", "low", "open", "user"}
 			currentIndex := -1
 			for i, sortOpt := range sortOptions {
-				if m.currentSort == sortOpt {
+				if m.currentSort == sortOpt || (m.currentSort == "" && sortOpt == "change") || (m.currentSort == "alpha" && sortOpt == "symbol") {
 					currentIndex = i
 
 					break

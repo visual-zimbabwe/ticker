@@ -23,13 +23,20 @@ func transformResponseQuote(responseQuote ResponseQuote) c.AssetQuote {
 			FromCurrencyCode: responseQuote.Currency,
 		},
 		QuotePrice: c.QuotePrice{
-			Price:          responseQuote.RegularMarketPrice.Raw,
-			PricePrevClose: responseQuote.RegularMarketPreviousClose.Raw,
-			PriceOpen:      responseQuote.RegularMarketOpen.Raw,
-			PriceDayHigh:   responseQuote.RegularMarketDayHigh.Raw,
-			PriceDayLow:    responseQuote.RegularMarketDayLow.Raw,
-			Change:         responseQuote.RegularMarketChange.Raw,
-			ChangePercent:  responseQuote.RegularMarketChangePercent.Raw,
+			Price:                     responseQuote.RegularMarketPrice.Raw,
+			PricePrevClose:            responseQuote.RegularMarketPreviousClose.Raw,
+			PriceOpen:                 responseQuote.RegularMarketOpen.Raw,
+			PriceDayHigh:              responseQuote.RegularMarketDayHigh.Raw,
+			PriceDayLow:               responseQuote.RegularMarketDayLow.Raw,
+			Change:                    responseQuote.RegularMarketChange.Raw,
+			ChangePercent:             responseQuote.RegularMarketChangePercent.Raw,
+			PriceRegularClose:         responseQuote.RegularMarketPrice.Raw,
+			PriceRegularChange:        responseQuote.RegularMarketChange.Raw,
+			PriceRegularChangePercent: responseQuote.RegularMarketChangePercent.Raw,
+			PricePreMarket:            responseQuote.PreMarketPrice.Raw,
+			PreMarketChangePercent:    responseQuote.PreMarketChangePercent.Raw,
+			PricePostMarket:           responseQuote.PostMarketPrice.Raw,
+			PostMarketChangePercent:   responseQuote.PostMarketChangePercent.Raw,
 		},
 		QuoteExtended: c.QuoteExtended{
 			FiftyTwoWeekHigh: responseQuote.FiftyTwoWeekHigh.Raw,
@@ -49,6 +56,13 @@ func transformResponseQuote(responseQuote ResponseQuote) c.AssetQuote {
 			IsVariablePrecision: isVariablePrecision,
 			SymbolInSourceAPI:   responseQuote.Symbol,
 		},
+	}
+
+	if responseQuote.PostMarketPrice.Raw > 0 && responseQuote.RegularMarketPrice.Raw > 0 {
+		assetQuote.QuotePrice.PostMarketChangePercent = ((responseQuote.PostMarketPrice.Raw - responseQuote.RegularMarketPrice.Raw) / responseQuote.RegularMarketPrice.Raw) * 100
+	}
+	if responseQuote.PreMarketPrice.Raw > 0 && responseQuote.RegularMarketPreviousClose.Raw > 0 {
+		assetQuote.QuotePrice.PreMarketChangePercent = ((responseQuote.PreMarketPrice.Raw - responseQuote.RegularMarketPreviousClose.Raw) / responseQuote.RegularMarketPreviousClose.Raw) * 100
 	}
 
 	if responseQuote.MarketState == "REGULAR" {

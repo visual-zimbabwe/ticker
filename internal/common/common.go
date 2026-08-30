@@ -38,6 +38,7 @@ type Config struct {
 	Separate                          bool               `yaml:"show-separator"`
 	ExtraInfoExchange                 bool               `yaml:"show-tags"`
 	ExtraInfoFundamentals             bool               `yaml:"show-fundamentals"`
+	ShowOHLC                          bool               `yaml:"show-ohlc"`
 	ShowSummary                       bool               `yaml:"show-summary"`
 	ShowHoldings                      bool               `yaml:"show-holdings"`  // Deprecated: use ShowPositions instead, kept for backwards compatibility
 	ShowPositions                     bool               `yaml:"show-positions"` // Preferred field name
@@ -184,13 +185,20 @@ type Currency struct {
 }
 
 type QuotePrice struct {
-	Price          float64
-	PricePrevClose float64
-	PriceOpen      float64
-	PriceDayHigh   float64
-	PriceDayLow    float64
-	Change         float64
-	ChangePercent  float64
+	Price                     float64
+	PricePrevClose            float64
+	PriceOpen                 float64
+	PriceDayHigh              float64
+	PriceDayLow               float64
+	Change                    float64
+	ChangePercent             float64
+	PriceRegularClose         float64
+	PriceRegularChange        float64
+	PriceRegularChangePercent float64
+	PricePreMarket            float64
+	PreMarketChangePercent    float64
+	PricePostMarket           float64
+	PostMarketChangePercent   float64
 }
 
 type QuoteExtended struct {

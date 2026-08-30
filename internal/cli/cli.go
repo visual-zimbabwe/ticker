@@ -28,6 +28,7 @@ type Options struct {
 	Separate              bool
 	ExtraInfoExchange     bool
 	ExtraInfoFundamentals bool
+	ShowOHLC              bool
 	ShowSummary           bool
 	ShowHoldings          bool // Deprecated: use ShowPositions instead, kept for backwards compatibility
 	ShowPositions         bool // Preferred field name
@@ -222,6 +223,7 @@ func GetConfig(dep c.Dependencies, configPath string, options Options) (c.Config
 	config.Separate = getBoolOption(options.Separate, config.Separate)
 	config.ExtraInfoExchange = getBoolOption(options.ExtraInfoExchange, config.ExtraInfoExchange)
 	config.ExtraInfoFundamentals = getBoolOption(options.ExtraInfoFundamentals, config.ExtraInfoFundamentals)
+	config.ShowOHLC = getBoolOption(options.ShowOHLC, config.ShowOHLC)
 	config.ShowSummary = getBoolOption(options.ShowSummary, config.ShowSummary)
 	// Merge ShowHoldings into ShowPositions with positions taking precedence
 	// First check if Positions is set (CLI or config), then fall back to Holdings if not

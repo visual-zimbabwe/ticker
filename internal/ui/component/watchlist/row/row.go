@@ -40,6 +40,13 @@ type CellWidthsContainer struct {
 	WidthPosition         int
 	WidthPositionExtended int
 	WidthVolumeMarketCap  int
+	WidthOpen             int
+	WidthHigh             int
+	WidthLow              int
+	WidthVolume           int
+	WidthMarketCap        int
+	WidthPreMarket        int
+	WidthPostMarket       int
 }
 
 type Config struct {
@@ -48,6 +55,7 @@ type Config struct {
 	ShowPositions         bool
 	ExtraInfoExchange     bool
 	ExtraInfoFundamentals bool
+	ShowOHLC              bool
 	Styles                c.Styles
 	Asset                 *c.Asset
 }
@@ -237,6 +245,10 @@ func (m *Model) View() string {
 
 func (m *Model) buildCells() []grid.Cell {
 
+	if m.config.ShowOHLC {
+		return m.buildOHLCCells()
+	}
+
 	if !m.config.ExtraInfoFundamentals && !m.config.ShowPositions {
 
 		return []grid.Cell{
@@ -337,7 +349,99 @@ func (m *Model) buildCells() []grid.Cell {
 	)
 
 	return cells
+}
 
+func (m *Model) buildOHLCCells() []grid.Cell {
+	closePrice := m.config.Asset.QuotePrice.PriceRegularClose
+	if closePrice == 0.0 {
+		closePrice = m.config.Asset.QuotePrice.Price
+	}
+	closeText := m.config.Styles.Text(u.ConvertFloatToString(closePrice, m.config.Asset.Meta.IsVariablePrecision))
+
+	preMktText := m.config.Styles.TextLabel("—")
+	if m.config.Asset.QuotePrice.PricePreMarket > 0.0 {
+		prePriceStr := u.ConvertFloatToString(m.config.Asset.QuotePrice.PricePreMarket, m.config.Asset.Meta.IsVariablePrecision)
+		prePctStr := u.ConvertFloatToString(m.config.Asset.QuotePrice.PreMarketChangePercent, false) + "%"
+		if m.config.Asset.QuotePrice.PreMarketChangePercent > 0.0 {
+			prePctStr = "+" + prePctStr
+		}
+		preMktText = m.config.Styles.TextPrice(m.config.Asset.QuotePrice.PreMarketChangePercent, prePriceStr+" ("+prePctStr+")")
+	}
+
+	postMktText := m.config.Styles.TextLabel("—")
+	if m.config.Asset.QuotePrice.PricePostMarket > 0.0 {
+		postPriceStr := u.ConvertFloatToString(m.config.Asset.QuotePrice.PricePostMarket, m.config.Asset.Meta.IsVariablePrecision)
+		postPctStr := u.ConvertFloatToString(m.config.Asset.QuotePrice.PostMarketChangePercent, false) + "%"
+		if m.config.Asset.QuotePrice.PostMarketChangePercent > 0.0 {
+			postPctStr = "+" + postPctStr
+		}
+		postMktText = m.config.Styles.TextPrice(m.config.Asset.QuotePrice.PostMarketChangePercent, postPriceStr+" ("+postPctStr+")")
+	}
+
+	regChange := m.config.Asset.QuotePrice.PriceRegularChange
+	regChangePct := m.config.Asset.QuotePrice.PriceRegularChangePercent
+	if regChange == 0.0 && regChangePct == 0.0 {
+		regChange = m.config.Asset.QuotePrice.Change
+		regChangePct = m.config.Asset.QuotePrice.ChangePercent
+	}
+
+	cells := []grid.Cell{
+		{Text: textName(m.config.Asset, m.config.Styles), Width: WidthName},
+		{Text: ""},
+		{Text: textMarketState(m.config.Asset, m.config.Styles), Width: WidthMarketState, Align: grid.Right},
+		{
+			Text:  m.config.Styles.Text(u.ConvertFloatToString(m.config.Asset.QuotePrice.PriceOpen, m.config.Asset.Meta.IsVariablePrecision)),
+			Width: m.cellWidths.WidthOpen,
+			Align: grid.Right,
+		},
+		{
+			Text:  m.config.Styles.Text(u.ConvertFloatToString(m.config.Asset.QuotePrice.PriceDayHigh, m.config.Asset.Meta.IsVariablePrecision)),
+			Width: m.cellWidths.WidthHigh,
+			Align: grid.Right,
+		},
+		{
+			Text:  m.config.Styles.Text(u.ConvertFloatToString(m.config.Asset.QuotePrice.PriceDayLow, m.config.Asset.Meta.IsVariablePrecision)),
+			Width: m.cellWidths.WidthLow,
+			Align: grid.Right,
+		},
+		{
+			Text:  closeText,
+			Width: m.cellWidths.WidthQuoteExtended,
+			Align: grid.Right,
+		},
+		{
+			Text:  preMktText,
+			Width: m.cellWidths.WidthPreMarket,
+			Align: grid.Right,
+		},
+		{
+			Text:  postMktText,
+			Width: m.cellWidths.WidthPostMarket,
+			Align: grid.Right,
+		},
+		{
+			Text:  quoteChangeText(regChange, regChangePct, m.config.Asset.Meta.IsVariablePrecision, m.config.Styles),
+			Width: m.cellWidths.WidthQuote,
+			Align: grid.Right,
+		},
+		{
+			Text:  m.config.Styles.Text(u.ConvertFloatToString(m.config.Asset.QuoteExtended.Volume, true)),
+			Width: m.cellWidths.WidthVolume,
+			Align: grid.Right,
+		},
+		{
+			Text: func() string {
+				if m.config.Asset.QuoteExtended.MarketCap > 0 {
+					return m.config.Styles.Text(u.ConvertFloatToString(m.config.Asset.QuoteExtended.MarketCap, true))
+				}
+				return m.config.Styles.TextLabel("—")
+			}(),
+			Width: m.cellWidths.WidthMarketCap,
+			Align: grid.Right,
+		},
+	}
+
+	return cells
 }
 
 func textName(asset *c.Asset, styles c.Styles) string {
